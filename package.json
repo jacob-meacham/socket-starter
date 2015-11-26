@@ -1,0 +1,28 @@
+{
+  "name": "socket-starter",
+  "version": "0.0.1",
+  "description": "Simple websocket server",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jacob-meacham/socket-starter.git"
+  },
+  "author": "jemonjam",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jacob-meacham/socket-starter/issues"
+  },
+  "homepage": "https://github.com/jacob-meacham/socket-starter#readme",
+  "dependencies": {
+    "express": "4.13.3",
+    "socket.io": "1.3.7"
+  },
+  "devDependencies": {
+    "jshint": "^2.8.0",
+    "jshint-stylish": "2.0.1",
+    "nodemon": "1.8.1"
+  }
+}
