@@ -1,7 +1,10 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
-var io = require('socket.io')(http);
+
+// TODO: Use socket.io, which requires swift on the ios side, but would make all of this code
+// not necessary.
+var io = require('websocket.io').attach(http);
 
 app.use(express.static('public'));
 
@@ -9,11 +12,42 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + 'public/index.html');
 });
 
+var clients = [];
+function broadcast(socket, msg) {
+  clients.forEach(function(client) {
+    if (client === socket) {
+      return;
+    }
+
+    client.send(msg);
+  })
+}
+
+function addClient(socket) {
+  for (client in clients) {
+    if (client === socket) {
+      return; // Already in the list
+    }
+  }
+
+  clients.push(socket);
+}
+
+function removeClient(socket) {
+  clients.filter(function(client) {
+    return (client !== socket);
+  });
+}
+
 io.on('connection', function(socket) {
-  socket.on('value-changed', function(msg) {
-    console.log('got value changed');
-    console.log(msg);
-    socket.broadcast.emit('value-changed', msg);
+  addClient(socket);
+
+  socket.on('message', function(msg) {
+    broadcast(socket, msg);
+  });
+
+  socket.on('close', function () {
+    removeClient(socket);
   });
 });
 

@@ -1,4 +1,9 @@
-var socket = io();
+// TODO: Use socket.io, which would clean this all up
+var socket = new WebSocket("ws://localhost:6565/");
+
+socket.onmessage = function(message) {
+    console.log('received message ' + message);
+};
 
 $(function() {
     $('.volume').knob({
@@ -12,22 +17,27 @@ $(function() {
         angleOffset: 220,
         angleArc: 270,
         release : function (v) {
-            socket.emit('value-changed', {volume: v});
+            socket.send(JSON.stringify({'value': {volume: v}}));
         }
     });
 
-    $('.eq').knob({
-        min: -20,
-        max: 10,
-        width: 75,
-        fgColor: '#ffec03',
-        bgColor: '#222',
-        skin: 'tron',
-        thickness: .2,
-        angleOffset: 220,
-        angleArc: 270,
-        release : function (v) {
-            socket.emit('value-changed', {eq: v});
-        }
+    $('.eq').each(function(index) {
+        $(this).knob({
+            min: -20,
+            max: 10,
+            width: 75,
+            fgColor: '#ffec03',
+            bgColor: '#222',
+            skin: 'tron',
+            thickness: .2,
+            angleOffset: 220,
+            angleArc: 270,
+            release: function (v) {
+                var eq = 'eq' + (index + 1);
+                var msg = { 'value': {}};
+                msg.value[eq] = v;
+                socket.send(JSON.stringify(msg));
+            }
+        });
     });
 });
