@@ -5,16 +5,22 @@
     <link rel="stylesheet" type="text/css" href="client.css">
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/jquery-color/jquery.color.js"></script>
     <script src="bower_components/aterrien/jQuery-Knob/dist/jquery.knob.min.js"></script>
     <script src="client.js"></script>
   </head>
   <body>
-    <input type="text" value="0" class="volume"></input>
-    <input type="text" value="0" class="eq"></input>
-    <input type="text" value="0" class="eq"></input>
-    <input type="text" value="0" class="eq"></input>
-    <input type="text" value="0" class="eq"></input>
-    <input type="text" value="0" class="eq"></input>
+    <div class="volume-container">
+      <input type="text" value="0" class="volume"></input>
+      <h1 class="volume-label">Volume</h1>
+    </div>
+    <div class="eq-container">
+      <input type="text" value="0" class="eq"></input>
+      <input type="text" value="0" class="eq"></input>
+      <input type="text" value="0" class="eq"></input>
+      <input type="text" value="0" class="eq"></input>
+      <input type="text" value="0" class="eq"></input>
+      <h1 class="eq-label">EQ</h1>
+    </div>
   </body>
 </html>
