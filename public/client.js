@@ -165,7 +165,7 @@ $(function() {
 
             socket.send(JSON.stringify({
                 'valueChange': {
-                    effect: {active: active, index: index}
+                    effect: {active: active, index: index, effectIndex: $(this).data('index')}
                 }
             }));
         });
