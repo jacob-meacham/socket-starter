@@ -23,12 +23,21 @@ socket.onmessage = function(message) {
         $('.clients').text(text);
     } else if (objectMessage.valueChange) {
         changeFromMessage = true;
-        if (objectMessage.valueChange.volume) {
-            $('.volume').val(objectMessage.valueChange.volume).trigger('change');
-        } else if (objectMessage.valueChange.eq) {
-            var eq = objectMessage.valueChange.eq;
+        var valueChange = objectMessage.valueChange;
+        if (valueChange.volume) {
+            $('.volume').val(valueChange.volume).trigger('change');
+        } else if (valueChange.eq) {
+            var eq = valueChange.eq;
             var index = eq.index;
             $('.eq').eq(index).val(eq.gain).trigger('change');
+        } else if (valueChange.effect) {
+            var active = valueChange.effect.active;
+            var index = valueChange.effect.index;
+            if (active) {
+                $('.effect').eq(index).addClass('active');
+            } else {
+                $('.effect').eq(index).removeClass('active');
+            }
         }
         changeFromMessage = false;
     }
@@ -140,6 +149,25 @@ $(function() {
                 this.i.css('color', curColor);
                 return tronDraw(this);
             }
+        });
+    });
+
+    $('.effect').each(function(index) {
+        var active = false;
+
+        $(this).click(function() {
+            active = !active;
+            if (active) {
+                $(this).addClass('active');
+            } else {
+                $(this).removeClass('active');
+            }
+
+            socket.send(JSON.stringify({
+                'valueChange': {
+                    effect: {active: active, index: index}
+                }
+            }));
         });
     });
 });

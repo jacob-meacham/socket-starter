@@ -9,11 +9,12 @@ body {
   background-color: #222;
   text-align: center;
   font-family: 'Montserrat', sans-serif;
-  color: #c0ffff;
+  color: white;
 }
 
 .title {
     font-size: 3em;
+    color: #c0ffff;
 }
 
 h1 {
@@ -31,16 +32,54 @@ h1 {
 
 .eq-label {
     margin-top: 0;
-    color: #ffec03;
+    margin-bottom: 5px;
 }
 
 .eq-container {
     margin-top: 40px;
     padding: 5px;
-    padding-top: 20px;
     background-color: #555;
 }
 
 .eq-container > div {
     margin: 0 10px;
+}
+
+.effects-container {
+  margin-top: 20px;
+}
+
+.effect {
+  background: #555;
+  border-radius: 7px;
+  width: 70px;
+  height: 70px;
+  font-size: 2em;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.effect.active {
+  background: white;
+  color: #222;
+}
+
+.effect:hover,
+.effect:focus {
+  transition: 0.1s ease-in-out;
+  background: #333;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.effect.active:hover,
+.effect.active:focus {
+  transition: 0.1s ease-in-out;
+  background: #ccc;
+  color: #000;
+  cursor: pointer;
+}
+
+.effect .text {
+  margin-top: 15px;
 }
