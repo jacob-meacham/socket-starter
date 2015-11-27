@@ -34,7 +34,7 @@ function addClient(socket) {
 }
 
 function removeClient(socket) {
-  clients.filter(function(client) {
+  clients = clients.filter(function(client) {
     return (client !== socket);
   });
 }
@@ -47,10 +47,16 @@ io.on('connection', function(socket) {
     broadcast(msg, socket);
   });
 
-  socket.on('close', function () {
+  socket.on('close', function() {
     removeClient(socket);
     broadcast(JSON.stringify({'clientConnections': clients.length}));
   });
+
+  socket.on('error', function(error) {
+    // Remove the socket in an error case
+    removeClient(socket);
+    broadcast(JSON.stringify({'clientConnections': clients.length}));
+  })
 });
 
 http.listen(6565, function() {
