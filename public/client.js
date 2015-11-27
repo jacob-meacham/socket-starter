@@ -27,7 +27,7 @@ socket.onmessage = function(message) {
             $('.volume').val(objectMessage.valueChange.volume).trigger('change');
         } else if (objectMessage.valueChange.eq) {
             var eq = objectMessage.valueChange.eq;
-            var index = eq.index-1; // We add 1 when sending
+            var index = eq.index;
             $('.eq').eq(index).val(eq.gain).trigger('change');
         }
         changeFromMessage = false;
@@ -64,7 +64,7 @@ function tronDraw(self) {
 
 $(function() {
     $('.volume').knob({
-        min: -30,
+        min: -22,
         max: 6,
         width: 150,
         height: 150,
@@ -82,6 +82,12 @@ $(function() {
         },
         draw: function() {
             return tronDraw(this);
+        },
+        format: function(val) {
+            if (val >= 0) {
+                return val + ' dB';
+            }
+            return val;
         }
     });
 
@@ -105,8 +111,8 @@ $(function() {
         var curColor = interpolateColor(0).toHexString();
 
         $(this).knob({
-            min: -20,
-            max: 10,
+            min: min,
+            max: max,
             width: 75,
             height: 75,
             fgColor: '#ffec03',
@@ -121,7 +127,7 @@ $(function() {
                     // Only broadcast if the change didn't come from the server.
                     socket.send(JSON.stringify({
                         'valueChange': {
-                            eq: {gain: v, index: index+1}
+                            eq: {gain: v, index: index}
                         }
                     }));
                 }
