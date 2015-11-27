@@ -9,6 +9,19 @@ body {
   background-color: #222;
   text-align: center;
   font-family: 'Montserrat', sans-serif;
+  color: #c0ffff;
+}
+
+.title {
+    font-size: 3em;
+}
+
+h1 {
+    margin: 0;
+}
+
+.volume-container {
+    margin-top: 40px;
 }
 
 .volume-label {
@@ -22,7 +35,7 @@ body {
 }
 
 .eq-container {
-    margin-top: 60px;
+    margin-top: 40px;
     padding: 5px;
     padding-top: 20px;
     background-color: #555;

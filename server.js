@@ -13,7 +13,7 @@ app.get('/', function(req, res){
 });
 
 var clients = [];
-function broadcast(socket, msg) {
+function broadcast(msg, socket) {
   clients.forEach(function(client) {
     if (client === socket) {
       return;
@@ -41,13 +41,15 @@ function removeClient(socket) {
 
 io.on('connection', function(socket) {
   addClient(socket);
+  broadcast(JSON.stringify({'clientConnections': clients.length}));
 
   socket.on('message', function(msg) {
-    broadcast(socket, msg);
+    broadcast(msg, socket);
   });
 
   socket.on('close', function () {
     removeClient(socket);
+    broadcast(JSON.stringify({'clientConnections': clients.length}));
   });
 });
 

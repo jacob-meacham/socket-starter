@@ -1,9 +1,66 @@
-// TODO: Use socket.io, which would clean this all up
+// TODO: Use socket.io, which would clean self all up
 var socket = new WebSocket("ws://localhost:6565/");
 
+var changeFromMessage = false;
 socket.onmessage = function(message) {
-    console.log('received message ' + message);
+    console.log('received message ' + message.data);
+    var objectMessage = JSON.parse(message.data);
+    if (!objectMessage) {
+        return;
+    }
+
+    if (objectMessage.clientConnections) {
+        var numConnections = objectMessage.clientConnections-1; // Remove ourselves
+        var text = numConnections + ' clients connected';
+        if (numConnections > 0) {
+            text += ' (active)';
+            $('.clients').css('color', '#c0ffff');
+        } else {
+            text += ' (not active)';
+            $('.clients').css('color', '#ffec03');
+        }
+
+        $('.clients').text(text);
+    } else if (objectMessage.valueChange) {
+        changeFromMessage = true;
+        if (objectMessage.valueChange.volume) {
+            $('.volume').val(objectMessage.valueChange.volume).trigger('change');
+        } else if (objectMessage.valueChange.eq) {
+            var eq = objectMessage.valueChange.eq;
+            var index = eq.index-1; // We add 1 when sending
+            $('.eq').eq(index).val(eq.gain).trigger('change');
+        }
+        changeFromMessage = false;
+    }
 };
+
+function tronDraw(self) {
+    var a = self.angle(self.cv)  // Angle
+        , sa = self.startAngle          // Previous start angle
+        , sat = self.startAngle         // Start angle
+        , ea                            // Previous end angle
+        , eat = sat + a                 // End angle
+        , r = true;
+
+    self.g.lineWidth = self.lineWidth;
+
+    self.o.cursor
+        && (sat = eat - 0.3)
+        && (eat = eat + 0.3);
+
+    self.g.beginPath();
+    self.g.strokeStyle = r ? self.o.fgColor : self.fgColor ;
+    self.g.arc(self.xy, self.xy, self.radius - self.lineWidth, sat, eat, false);
+    self.g.stroke();
+
+    self.g.lineWidth = 2;
+    self.g.beginPath();
+    self.g.strokeStyle = self.o.fgColor;
+    self.g.arc(self.xy, self.xy, self.radius - self.lineWidth + 1 + self.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+    self.g.stroke();
+
+    return false;
+}
 
 $(function() {
     $('.volume').knob({
@@ -17,8 +74,14 @@ $(function() {
         thickness: .1,
         angleOffset: 220,
         angleArc: 270,
-        release : function(v) {
-            socket.send(JSON.stringify({'valueChange': {volume: v}}));
+        release: function(v) {
+            if (!changeFromMessage) {
+                // Only broadcast if the change didn't come from the server.
+                socket.send(JSON.stringify({'valueChange': {volume: v}}));
+            }
+        },
+        draw: function() {
+            return tronDraw(this);
         }
     });
 
@@ -36,7 +99,6 @@ $(function() {
         function interpolateColor(newValue) {
             newValue += Math.abs(min);
             var perc = newValue / range;
-            console.log(newValue);
             return minColor.transition(maxColor, perc);
         }
 
@@ -55,11 +117,14 @@ $(function() {
             angleArc: 270,
             displayInput: false,
             release: function(v) {
-                socket.send(JSON.stringify({
-                    'valueChange': {
-                        eq: {gain: v, index: index+1}
-                    }
-                }));
+                if (!changeFromMessage) {
+                    // Only broadcast if the change didn't come from the server.
+                    socket.send(JSON.stringify({
+                        'valueChange': {
+                            eq: {gain: v, index: index+1}
+                        }
+                    }));
+                }
             },
             change: function(v) {
                 curColor = interpolateColor(v).toHexString();
@@ -67,6 +132,7 @@ $(function() {
             draw: function() {
                 this.o.fgColor = curColor;
                 this.i.css('color', curColor);
+                return tronDraw(this);
             }
         });
     });
