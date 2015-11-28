@@ -31,8 +31,20 @@ socket.onmessage = function(message) {
             var index = eq.index;
             $('.eq').eq(index).val(eq.gain).trigger('change');
         } else if (valueChange.effect) {
+            function getIndexFromEffect(effectIndex) {
+                var matchedEffect = $('.effect').filter(function(effect) {
+                    return $(this).data('index') == effectIndex;
+                });
+
+                return $('.effect').index(matchedEffect);
+            }
+
             var active = valueChange.effect.active;
             var index = valueChange.effect.index;
+            if (!index) {
+                index = getIndexFromEffect(valueChange.effect.effectIndex);
+            }
+
             if (active) {
                 $('.effect').eq(index).addClass('active');
             } else {
@@ -83,7 +95,7 @@ $(function() {
         thickness: .1,
         angleOffset: 220,
         angleArc: 270,
-        release: function(v) {
+        change: function(v) {
             if (!changeFromMessage) {
                 // Only broadcast if the change didn't come from the server.
                 socket.send(JSON.stringify({'valueChange': {volume: v}}));
@@ -131,7 +143,8 @@ $(function() {
             angleOffset: 220,
             angleArc: 270,
             displayInput: false,
-            release: function(v) {
+            change: function(v) {
+                curColor = interpolateColor(v).toHexString();
                 if (!changeFromMessage) {
                     // Only broadcast if the change didn't come from the server.
                     socket.send(JSON.stringify({
@@ -140,9 +153,6 @@ $(function() {
                         }
                     }));
                 }
-            },
-            change: function(v) {
-                curColor = interpolateColor(v).toHexString();
             },
             draw: function() {
                 this.o.fgColor = curColor;
