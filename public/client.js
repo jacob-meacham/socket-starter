@@ -1,10 +1,119 @@
 // TODO: Use socket.io, which would clean self all up
+// TODO: Obv use React or Angular instead of bare jquery. Already difficulty to use, even for a demo...
 var socket = new WebSocket("ws://localhost:6565/");
 
 var changeFromMessage = false;
+var isRecording = false;
+var isPlayingBack = false;
+var currentRecording = [];
+var lastMessageTime = 0.0;
+
+function processMessage(message) {
+    if (isRecording) {
+        processRecording(message);
+        return;
+    }
+
+    if (!changeFromMessage) {
+        // Only broadcast if the change didn't come from the server.
+        socket.send(JSON.stringify(message));
+    }
+}
+
+function processRecording(message) {
+    var timeDelta = Date.now() - lastMessageTime;
+    currentRecording.push({
+        'delta': timeDelta,
+        'message': message
+    });
+
+    console.log('adding message ' + message);
+    lastMessageTime = Date.now();
+}
+
+function startRecording() {
+    if (isRecording || isPlayingBack) {
+        return;
+    }
+    lastMessageTime = Date.now();
+    currentRecording = [];
+    isRecording = true;
+
+    $('.recording').click(stopRecording);
+    $('.recording').text('Stop Recording');
+    $('.playback').addClass('disabled');
+}
+
+function stopRecording() {
+    if (!isRecording) {
+        return;
+    }
+
+    isRecording = false;
+    var now = Date.now();
+    localStorage.setItem('curator-recording', JSON.stringify(currentRecording));
+    currentRecording = [];
+
+    $('.recording').click(startRecording);
+    $('.recording').text('Start Recording');
+    $('.playback').removeClass('disabled');
+}
+
+function startPlayback() {
+    if (isRecording || isPlayingBack) {
+        return;
+    }
+
+    $('.playback').click(stopPlayback);
+    $('.playback').text('Stop Playback');
+    $('.recording').addClass('disabled');
+
+    isPlayingBack = true;
+    currentRecording = JSON.parse(localStorage.getItem('curator-recording'));
+    var currentMessage = 0;
+
+    function startTimer(delay) {
+        setTimeout(nextMessage, delay);
+    }
+
+    function nextMessage() {
+        if (currentMessage >= currentRecording.length) {
+            stopPlayback();
+            return;
+        }
+
+        var rec = currentRecording[currentMessage++];
+
+        // Send the message abroad and also reflect it locally.
+        socket.send(JSON.stringify(rec.message));
+        socket.onmessage(rec.message);
+
+        startTimer(rec.delta)
+    }
+
+    nextMessage();
+}
+
+function stopPlayback() {
+    if (!isPlayingBack) {
+        return;
+    }
+
+    isPlayingBack = false;
+    $('.playback').click(startPlayback);
+    $('.playback').text('Start Playback');
+    $('.recording').removeClass('disabled');
+}
+
 socket.onmessage = function(message) {
-    console.log('received message ' + message.data);
-    var objectMessage = JSON.parse(message.data);
+    var objectMessage;
+    if (!message.data) {
+        objectMessage = message;
+    } else {
+        console.log('received message ' + message.data);
+        objectMessage = JSON.parse(message.data);
+    }
+
     if (!objectMessage) {
         return;
     }
@@ -56,11 +165,11 @@ socket.onmessage = function(message) {
 };
 
 function tronDraw(self) {
-    var a = self.angle(self.cv)  // Angle
-        , sa = self.startAngle          // Previous start angle
-        , sat = self.startAngle         // Start angle
-        , ea                            // Previous end angle
-        , eat = sat + a                 // End angle
+    var a = self.angle(self.cv)
+        , sa = self.startAngle
+        , sat = self.startAngle
+        , ea
+        , eat = sat + a
         , r = true;
 
     self.g.lineWidth = self.lineWidth;
@@ -80,10 +189,19 @@ function tronDraw(self) {
     self.g.arc(self.xy, self.xy, self.radius - self.lineWidth + 1 + self.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
     self.g.stroke();
 
+    // TODO: Add colored bands around the outside.
+
     return false;
 }
 
 $(function() {
+    $('.recording').click(startRecording);
+    $('.playback').click(startPlayback);
+
+    if (!localStorage.getItem('curator-recording')) {
+        $('.playback').addClass('disabled');
+    }
+
     $('.volume').knob({
         min: -22,
         max: 6,
@@ -96,10 +214,7 @@ $(function() {
         angleOffset: 220,
         angleArc: 270,
         change: function(v) {
-            if (!changeFromMessage) {
-                // Only broadcast if the change didn't come from the server.
-                socket.send(JSON.stringify({'valueChange': {volume: v}}));
-            }
+            processMessage({'valueChange': {volume: v}});
         },
         draw: function() {
             return tronDraw(this);
@@ -145,18 +260,14 @@ $(function() {
             displayInput: false,
             change: function(v) {
                 curColor = interpolateColor(v).toHexString();
-                if (!changeFromMessage) {
-                    // Only broadcast if the change didn't come from the server.
-                    socket.send(JSON.stringify({
-                        'valueChange': {
-                            eq: {gain: v, index: index}
-                        }
-                    }));
-                }
+                processMessage({
+                    'valueChange': {
+                        eq: {gain: v, index: index}
+                    }
+                });
             },
             draw: function() {
                 this.o.fgColor = curColor;
-                this.i.css('color', curColor);
                 return tronDraw(this);
             }
         });
@@ -173,11 +284,11 @@ $(function() {
                 $(this).removeClass('active');
             }
 
-            socket.send(JSON.stringify({
-                'valueChange': {
-                    effect: {active: active, index: index, effectIndex: $(this).data('index')}
-                }
-            }));
+            processMessage({'valueChange': {
+                effect: {active: active, index: index, effectIndex: $(this).data('index')}
+            }});
         });
     });
 });
+
+// Script mode

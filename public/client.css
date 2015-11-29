@@ -13,12 +13,14 @@ body {
 }
 
 .title {
-    font-size: 3em;
+    font-size: 48px;
     color: #c0ffff;
 }
 
 h1 {
     margin: 0;
+    font-weight: bold;
+    line-height: 60px;
 }
 
 .volume-container {
@@ -82,4 +84,8 @@ h1 {
 
 .effect .text {
   margin-top: 15px;
+}
+
+.recording-container {
+  margin-top: 25px;
 }

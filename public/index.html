@@ -1,13 +1,14 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.io</title>
+    <title>Curator</title>
+    <link rel="stylesheet" type="text/css" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="client.css">
-    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="bower_components/jquery-color/jquery.color.js"></script>
-    <script src="bower_components/aterrien/jQuery-Knob/dist/jquery.knob.min.js"></script>
-    <script src="client.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="bower_components/jquery/dist/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="bower_components/jquery-color/jquery.color.js" type="text/javascript" charset="utf-8"></script>
+    <script src="bower_components/aterrien/jQuery-Knob/dist/jquery.knob.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="client.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
     <h1 class="title">Curator</h1>
@@ -33,6 +34,10 @@
       <span class="effect" data-index="4"><div class="text">Fz</div></span>
       <span class="effect" data-index="3"><div class="text">Nm</div></span>
       <span class="effect" data-index="2"><div class="text">Rv</div></span>
+    </div>
+    <div class="recording-container">
+      <button class="recording btn btn-primary btn-large">Start Recording</button>
+      <button class="playback btn btn-primary btn-large">Start Playback</button>
     </div>
   </body>
 </html>
