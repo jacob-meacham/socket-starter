@@ -6,7 +6,51 @@ var changeFromMessage = false;
 var isRecording = false;
 var isPlayingBack = false;
 var currentRecording = [];
+var recordingInitialState = {};
 var lastMessageTime = 0.0;
+
+function setState(state) {
+    $('.volume').val(state.volume).trigger('change');
+    ensureVolumeSize(state.volume);
+
+    $('.eq').each(function(index) {
+        $(this).val(state['eq' + index]).trigger('change');
+    });
+
+    $('.effect').removeClass('active');
+    for (var i = 0; i < state.activeEffects.length; i++) {
+        $('.effect').eq(state.activeEffects[i]).addClass('active');
+    }
+}
+
+function resetState() {
+    setState({
+        volume: 0,
+        eq0: 0,
+        eq1: 0,
+        eq2: 0,
+        eq3: 0,
+        eq4: 0,
+        activeEffects: []
+    });
+}
+
+function getState() {
+    var state = {};
+    state.volume = $('.volume').val();
+    $('.eq').each(function(index) {
+        state['eq' + index] = $(this).val();
+    });
+
+    state.activeEffects = [];
+    $('.effect').each(function(index) {
+        if ($(this).hasClass('active')) {
+            state.activeEffects.push(index);
+        }
+    });
+
+    return state;
+}
 
 function processMessage(message) {
     if (isRecording) {
@@ -27,7 +71,6 @@ function processRecording(message) {
         'message': message
     });
 
-    console.log('adding message ' + message);
     lastMessageTime = Date.now();
 }
 
@@ -37,6 +80,7 @@ function startRecording() {
     }
     lastMessageTime = Date.now();
     currentRecording = [];
+    recordingInitialState = getState();
     isRecording = true;
 
     $('.recording').click(stopRecording);
@@ -51,8 +95,10 @@ function stopRecording() {
 
     isRecording = false;
     var now = Date.now();
-    localStorage.setItem('curator-recording', JSON.stringify(currentRecording));
-    currentRecording = [];
+    localStorage.setItem('curator-recording', JSON.stringify({
+        initialState: recordingInitialState,
+        recording: currentRecording
+    }));
 
     $('.recording').click(startRecording);
     $('.recording').text('Start Recording');
@@ -69,7 +115,9 @@ function startPlayback() {
     $('.recording').addClass('disabled');
 
     isPlayingBack = true;
-    currentRecording = JSON.parse(localStorage.getItem('curator-recording'));
+    recordingRec = JSON.parse(localStorage.getItem('curator-recording'));
+    currentRecording = recordingRec.recording;
+    setState(recordingRec.initialState);
     var currentMessage = 0;
 
     function startTimer(delay) {
@@ -135,6 +183,7 @@ socket.onmessage = function(message) {
         var valueChange = objectMessage.valueChange;
         if (valueChange.volume) {
             $('.volume').val(valueChange.volume).trigger('change');
+            ensureVolumeSize(valueChange.volume);
         } else if (valueChange.eq) {
             var eq = valueChange.eq;
             var index = eq.index;
@@ -164,7 +213,18 @@ socket.onmessage = function(message) {
     }
 };
 
-function tronDraw(self) {
+function tronDraw(self, drawColorBars, drawBarsWithFgColor) {
+    var colors = [
+        '#26e000','#2fe300','#37e700','#45ea00','#51ef00',
+        '#61f800','#6bfb00','#77ff02','#80ff05','#8cff09',
+        '#93ff0b','#9eff09','#a9ff07','#c2ff03','#d7ff07',
+        '#f2ff0a','#fff30a','#ffdc09','#ffce0a','#ffc30a',
+        '#ffb509','#ffa808','#ff9908','#ff8607','#ff7005',
+        '#ff5f04','#ff4f03','#f83a00','#ee2b00','#e52000'
+    ];
+
+    var numColors = colors.length;
+
     var a = self.angle(self.cv)
         , sa = self.startAngle
         , sat = self.startAngle
@@ -179,19 +239,49 @@ function tronDraw(self) {
         && (eat = eat + 0.3);
 
     self.g.beginPath();
-    self.g.strokeStyle = r ? self.o.fgColor : self.fgColor ;
-    self.g.arc(self.xy, self.xy, self.radius - self.lineWidth, sat, eat, false);
+    self.g.strokeStyle = r ? self.o.fgColor : self.fgColor;
+    self.g.arc(self.xy, self.xy, self.radius - self.lineWidth - 8, sat, eat, false);
     self.g.stroke();
 
     self.g.lineWidth = 2;
     self.g.beginPath();
     self.g.strokeStyle = self.o.fgColor;
-    self.g.arc(self.xy, self.xy, self.radius - self.lineWidth + 1 + self.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+    self.g.arc(self.xy, self.xy, self.radius - self.lineWidth - 8 + 1 + self.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
     self.g.stroke();
+
+    if (drawColorBars) {
+        var angle = (self.endAngle - self.startAngle) / numColors;
+
+        for (var i = 0; i < numColors; i++) {
+            var start = sat + angle*i;
+            if (start > eat) {
+                break;
+            }
+
+            var color = colors[i];
+            if (drawBarsWithFgColor) {
+                color = self.o.fgColor;
+            }
+            self.g.lineWidth = 15;
+            self.g.beginPath();
+            self.g.strokeStyle = color;
+            self.g.arc(self.xy, self.xy, self.radius, start, start + angle - 0.05, false);
+            self.g.stroke();
+        }
+    }
+
 
     // TODO: Add colored bands around the outside.
 
     return false;
+}
+
+function ensureVolumeSize(v) {
+    if (v <= -9) {
+        $('.volume').css('font-size', '25px');
+    } else {
+        $('.volume').css('font-size', '30px');
+    }
 }
 
 $(function() {
@@ -205,8 +295,8 @@ $(function() {
     $('.volume').knob({
         min: -22,
         max: 6,
-        width: 150,
-        height: 150,
+        width: 160,
+        height: 160,
         fgColor: '#c0ffff',
         bgColor: '#222',
         skin: 'tron',
@@ -215,43 +305,30 @@ $(function() {
         angleArc: 270,
         change: function(v) {
             processMessage({'valueChange': {volume: v}});
+
+            // Size things correctly:
+            ensureVolumeSize(v);
         },
         draw: function() {
-            return tronDraw(this);
+            return tronDraw(this, true, true);
         },
         format: function(val) {
-            if (val >= 0) {
-                return val + ' dB';
-            }
-            return val;
+            return val + ' dB';
         }
     });
 
-    $('.eq').each(function(index) {
-        function rgb(r, g, b) {
-            return {red: r, green: g, blue: b};
-        }
-        var minColor = jQuery.Color(255, 0, 0);
-        var maxColor = jQuery.Color(255, 236, 3);
+    ensureVolumeSize(0);
 
+    $('.eq').each(function(index) {
         var min = -20;
         var max = 10;
-        var range = max-min;
-
-        function interpolateColor(newValue) {
-            newValue += Math.abs(min);
-            var perc = newValue / range;
-            return minColor.transition(maxColor, perc);
-        }
-
-        var curColor = interpolateColor(0).toHexString();
 
         $(this).knob({
             min: min,
             max: max,
-            width: 75,
-            height: 75,
-            fgColor: '#ffec03',
+            width: 85,
+            height: 85,
+            fgColor: '#ffdc09',
             bgColor: '#222',
             skin: 'tron',
             thickness: .2,
@@ -259,7 +336,6 @@ $(function() {
             angleArc: 270,
             displayInput: false,
             change: function(v) {
-                curColor = interpolateColor(v).toHexString();
                 processMessage({
                     'valueChange': {
                         eq: {gain: v, index: index}
@@ -267,8 +343,7 @@ $(function() {
                 });
             },
             draw: function() {
-                this.o.fgColor = curColor;
-                return tronDraw(this);
+                return tronDraw(this, true, false);
             }
         });
     });
