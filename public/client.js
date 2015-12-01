@@ -11,16 +11,30 @@ var lastMessageTime = 0.0;
 
 function setState(state) {
     $('.volume').val(state.volume).trigger('change');
+    sendMessage({'valueChange': {volume: state.volume}});
+
     ensureVolumeSize(state.volume);
 
     $('.eq').each(function(index) {
         $(this).val(state['eq' + index]).trigger('change');
+        sendMessage({'valueChange': { eq: {gain: state['eq' + index], index: index} } });
     });
 
     $('.effect').removeClass('active');
     for (var i = 0; i < state.activeEffects.length; i++) {
         $('.effect').eq(state.activeEffects[i]).addClass('active');
     }
+
+    $('.effect').each(function(index) {
+        var active = false;
+        if ($(this).hasClass('active')) {
+            active = true;
+        }
+
+        sendMessage({'valueChange': {
+                effect: {active: active, index: index, effectIndex: $(this).data('index')}
+        } });
+    });
 }
 
 function resetState() {
@@ -60,8 +74,12 @@ function processMessage(message) {
 
     if (!changeFromMessage) {
         // Only broadcast if the change didn't come from the server.
-        socket.send(JSON.stringify(message));
+        sendMessage(message);
     }
+}
+
+function sendMessage(message) {
+    socket.send(JSON.stringify(message));
 }
 
 function processRecording(message) {
@@ -213,7 +231,7 @@ socket.onmessage = function(message) {
     }
 };
 
-function tronDraw(self, drawColorBars, drawBarsWithFgColor) {
+function drawKnob(self) {
     var colors = [
         '#26e000','#2fe300','#37e700','#45ea00','#51ef00',
         '#61f800','#6bfb00','#77ff02','#80ff05','#8cff09',
@@ -249,7 +267,7 @@ function tronDraw(self, drawColorBars, drawBarsWithFgColor) {
     self.g.arc(self.xy, self.xy, self.radius - self.lineWidth - 8 + 1 + self.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
     self.g.stroke();
 
-    if (drawColorBars) {
+    if (self.o.drawColorBars) {
         var angle = (self.endAngle - self.startAngle) / numColors;
 
         for (var i = 0; i < numColors; i++) {
@@ -259,7 +277,7 @@ function tronDraw(self, drawColorBars, drawBarsWithFgColor) {
             }
 
             var color = colors[i];
-            if (drawBarsWithFgColor) {
+            if (self.o.drawBarsWithFgColor) {
                 color = self.o.fgColor;
             }
             self.g.lineWidth = 15;
@@ -287,6 +305,7 @@ function ensureVolumeSize(v) {
 $(function() {
     $('.recording').click(startRecording);
     $('.playback').click(startPlayback);
+    $('.reset').click(resetState);
 
     if (!localStorage.getItem('curator-recording')) {
         $('.playback').addClass('disabled');
@@ -303,6 +322,8 @@ $(function() {
         thickness: .1,
         angleOffset: 220,
         angleArc: 270,
+        drawColorBars: true,
+        drawBarsWithFgColor: true,
         change: function(v) {
             processMessage({'valueChange': {volume: v}});
 
@@ -310,7 +331,7 @@ $(function() {
             ensureVolumeSize(v);
         },
         draw: function() {
-            return tronDraw(this, true, true);
+            return drawKnob(this);
         },
         format: function(val) {
             return val + ' dB';
@@ -335,6 +356,8 @@ $(function() {
             angleOffset: 220,
             angleArc: 270,
             displayInput: false,
+            drawColorBars: true,
+            drawBarsWithFgColor: false,
             change: function(v) {
                 processMessage({
                     'valueChange': {
@@ -343,7 +366,7 @@ $(function() {
                 });
             },
             draw: function() {
-                return tronDraw(this, true, false);
+                return drawKnob(this);
             }
         });
     });
