@@ -6,11 +6,27 @@ var http = require('http').Server(app);
 // not necessary.
 var io = require('websocket.io').attach(http);
 
-app.use(express.static('public'));
+var basicAuth = require('basic-auth');
 
-app.get('/', function(req, res){
-  res.sendFile(__dirname + 'public/index.html');
-});
+var auth = function (req, res, next) {
+  function unauthorized(res) {
+    res.set('WWW-Authenticate', 'Basic realm=Authorization Required');
+    return res.send(401);
+  };
+
+  var user = basicAuth(req);
+  if (!user || !user.name || !user.pass) {
+    return unauthorized(res);
+  }
+
+  if (user.name !== process.env.ADMIN_USER || user.pass !== process.env.ADMIN_PASSWORD) {
+    return unauthorized(res);
+  }
+
+  return next();
+}
+
+app.use([auth, express.static('public')]);
 
 var clients = [];
 function broadcast(msg, socket) {

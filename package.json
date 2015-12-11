@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/jacob-meacham/socket-starter#readme",
   "dependencies": {
+    "basic-auth": "^1.0.3",
     "express": "4.13.3",
     "websocket.io": "0.2.1"
   },
