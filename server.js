@@ -75,6 +75,8 @@ io.on('connection', function(socket) {
   })
 });
 
-http.listen(6565, function() {
-  console.log('listening on *:6565');
+var port = process.env.PORT || 6565;
+var hostname = process.env.HOST || process.env.HOSTNAME || '0.0.0.0';
+http.listen(port, hostname, function() {
+  console.log('listening on ' + hostname + ':' + port);
 });
